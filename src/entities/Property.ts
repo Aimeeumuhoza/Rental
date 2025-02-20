@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { User } from './User';
+import { Booking } from './Booking';
 
 @Entity()
 export class Property {
@@ -21,4 +22,16 @@ export class Property {
 
   @ManyToOne(() => User, user => user.id)
   host: User | undefined;
+
+  @OneToMany(() => Booking, booking => booking.property)
+  bookings: Booking[] | undefined;
+
+  @Column('boolean')
+  isAvailable: boolean | undefined;
+
+  @Column('date')
+  createdAt: Date | undefined;
+
+  @Column('date')
+  updatedAt: Date | undefined;
 }
