@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import { AppDataSource } from "./config/ormconfig";
 import dotenv from "dotenv";
 import propertyRoutes from "./routes/property.routes";
+import bookingRoutes from "./routes/booking.routes";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use(passport.session());
 // Routes
 app.use("/auth", authRoutes);
 app.use("/api/properties", propertyRoutes);
+app.use("/api/bookings", bookingRoutes);
 // Database connection
 AppDataSource.initialize()
   .then(() => {

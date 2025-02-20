@@ -1,0 +1,105 @@
+import { Between, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
+import { AppDataSource } from "../config/ormconfig";
+import { Booking, BookingStatus } from "../entities/Booking";
+import { Property } from "../entities/Property";
+
+const bookingRepository = AppDataSource.getRepository(Booking);
+const propertyRepository = AppDataSource.getRepository(Property);
+
+export class BookingService {
+  static async createBooking(bookingData: {
+    propertyId: string;
+    renterId: string;
+    checkInDate: Date;
+    checkOutDate: Date;
+  }) {
+    // Check if property exists and is available
+    const property = await propertyRepository.findOne({
+      where: { id: bookingData.propertyId, isAvailable: true }
+    });
+
+    if (!property) {
+      throw new Error("Property not found or unavailable");
+    }
+
+    // Check for double booking
+    const existingBooking = await bookingRepository.findOne({
+      where: {
+        propertyId: bookingData.propertyId,
+        status: BookingStatus.CONFIRMED,
+        checkInDate: LessThanOrEqual(bookingData.checkOutDate),
+        checkOutDate: MoreThanOrEqual(bookingData.checkInDate)
+      }
+    });
+
+    if (existingBooking) {
+      throw new Error("Property is already booked for these dates");
+    }
+
+    const booking = bookingRepository.create(bookingData);
+    return await bookingRepository.save(booking);
+  }
+
+  static async updateBookingStatus(
+    bookingId: string,
+    status: BookingStatus,
+    hostId: string
+  ) {
+    const booking = await bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ["property"]
+    });
+
+    if (!booking) {
+      throw new Error("Booking not found");
+    }
+
+    if (booking.property?.host?.id !== hostId) {
+      throw new Error("Unauthorized to update this booking");
+    }
+
+    booking.status = status;
+    return await bookingRepository.save(booking);
+  }
+
+  static async getBookingsByRenter(renterId: string) {
+    return await bookingRepository.find({
+      where: { renterId },
+      relations: ["property"],
+      order: { createdAt: "DESC" }
+    });
+  }
+
+  static async getBookingsByProperty(propertyId: string, host: string) {
+    const property = await propertyRepository.findOne({
+      where: { id: propertyId, host: { id: host } }
+    });
+
+    if (!property) {
+      throw new Error("Property not found or unauthorized");
+    }
+
+    return await bookingRepository.find({
+      where: { propertyId },
+      relations: ["renter"],
+      order: { createdAt: "DESC" }
+    });
+  }
+
+  static async getBookingById(bookingId: string, userId: string) {
+    const booking = await bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ["property", "renter"]
+    });
+
+    if (!booking) {
+      throw new Error("Booking not found");
+    }
+
+    if (booking.renterId !== userId && booking.property?.host?.id !== userId) {
+      throw new Error("Unauthorized to view this booking");
+    }
+
+    return booking;
+  }
+}

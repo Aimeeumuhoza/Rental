@@ -1,32 +1,41 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { User } from './User';
-import { Property } from './Property';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  BeforeInsert,
+  BeforeUpdate
+} from "typeorm";
+import { Property } from "./Property";
+import { User } from "./User";
 
 export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  CANCELED = 'CANCELED'
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  CANCELED = "canceled"
 }
 
 @Entity()
 export class Booking {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string | undefined;
 
-  @ManyToOne(() => User, user => user.bookings)
-  renter: User | undefined;
+  @Column()
+  propertyId: string | undefined;
 
-  @ManyToOne(() => Property, property => property.id)
-  property: Property | undefined;
+  @Column()
+  renterId: string | undefined;
 
-  @Column('date')
+  @Column("date")
   checkInDate: Date | undefined;
 
-  @Column('date')
+  @Column("date")
   checkOutDate: Date | undefined;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: BookingStatus,
     default: BookingStatus.PENDING
   })
@@ -34,4 +43,21 @@ export class Booking {
 
   @CreateDateColumn()
   createdAt: Date | undefined;
+
+  @UpdateDateColumn()
+  updatedAt: Date | undefined;
+
+  @ManyToOne(() => Property, property => property.bookings)
+  property: Property | undefined;
+
+  @ManyToOne(() => User, user => user.bookings)
+  renter: User | undefined;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  validateDates() {
+    if (!this.checkInDate || !this.checkOutDate || this.checkInDate >= this.checkOutDate) {
+      throw new Error("Check-out date must be after check-in date");
+    }
+  }
 }

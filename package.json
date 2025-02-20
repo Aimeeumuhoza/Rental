@@ -9,8 +9,10 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "npm run typeorm migration:generate -- -d src/config/database.ts",
-    "migration:run": "npm run typeorm migration:run -- -d src/config/database.ts"
+    "migration:generate": "npm run typeorm migration:generate",
+    "migration:run": "npm run typeorm migration:run -- -d src/config/ormconfig.ts",
+    "migration:create": "npm run typeorm migration:create",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/config/ormconfig.ts"
   },
   "keywords": [],
   "author": "",
