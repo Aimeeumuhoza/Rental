@@ -40,27 +40,57 @@ export class BookingService {
     return await bookingRepository.save(booking);
   }
 
-  static async updateBookingStatus(
+  static async confirmBooking(bookingId: string, hostId: string) {
+    return await this.updateBookingStatus(bookingId, BookingStatus.CONFIRMED, hostId);
+  }
+
+  static async cancelBooking(bookingId: string, hostId: string) {
+    return await this.updateBookingStatus(bookingId, BookingStatus.CANCELED, hostId);
+  }
+
+  private static async updateBookingStatus(
     bookingId: string,
     status: BookingStatus,
     hostId: string
   ) {
     const booking = await bookingRepository.findOne({
       where: { id: bookingId },
-      relations: ["property"]
+      relations: ["property", "property.host"],
     });
 
     if (!booking) {
       throw new Error("Booking not found");
     }
 
-    if (booking.property?.host?.id !== hostId) {
+    if (!booking.property || booking.property.host?.id !== hostId) {
       throw new Error("Unauthorized to update this booking");
     }
 
     booking.status = status;
     return await bookingRepository.save(booking);
   }
+  
+  // static async updateBookingStatus(
+  //   bookingId: string,
+  //   status: BookingStatus,
+  //   hostId: string
+  // ) {
+  //   const booking = await bookingRepository.findOne({
+  //     where: { id: bookingId },
+  //     relations: ["property"]
+  //   });
+
+  //   if (!booking) {
+  //     throw new Error("Booking not found");
+  //   }
+
+  //   if (booking.property?.host?.id !== hostId) {
+  //     throw new Error("Unauthorized to update this booking");
+  //   }
+
+  //   booking.status = status;
+  //   return await bookingRepository.save(booking);
+  // }
 
   static async getBookingsByRenter(renterId: string) {
     return await bookingRepository.find({
@@ -101,5 +131,12 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  static async getAllBookings() {
+    return await bookingRepository.find({
+      order: { createdAt: "DESC" },
+      relations: ["property", "renter"]
+    });
   }
 }

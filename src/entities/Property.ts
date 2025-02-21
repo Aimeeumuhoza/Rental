@@ -26,12 +26,15 @@ export class Property {
   @OneToMany(() => Booking, booking => booking.property)
   bookings: Booking[] | undefined;
 
-  @Column('boolean')
+  @Column('boolean',{ default: true })
   isAvailable: boolean | undefined;
 
-  @Column('date')
+  @Column('date',{ default: () => 'CURRENT_DATE' })
   createdAt: Date | undefined;
 
-  @Column('date')
+  @Column('date',{ default: () => 'CURRENT_DATE' })
   updatedAt: Date | undefined;
+
+  @Column('text', { nullable: true })
+  imageUrl: string | undefined;
 }

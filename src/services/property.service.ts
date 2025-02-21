@@ -1,10 +1,13 @@
 // src/services/property.service.ts
 import { AppDataSource } from "../config/ormconfig";
+import { Booking } from "../entities/Booking";
 import { Property } from "../entities/Property";
 import { User } from "../entities/User";
 import { UserRole } from "../entities/User";
 
 const propertyRepository = AppDataSource.getRepository(Property);
+const bookingRepository = AppDataSource.getRepository(Booking);
+
 
 export class PropertyService {
   static async createProperty(propertyData: Partial<Property>, hostId: string) {
@@ -75,4 +78,22 @@ export class PropertyService {
       order: { createdAt: "DESC" }
     });
   }
+
+  static async getPropertiesByRentId(renterId: string) {
+    try {
+      const bookings = await bookingRepository.find({
+        where: {
+          renterId: renterId 
+        },
+        relations: ['property'],
+        order: { createdAt: "DESC" }
+      })
+
+      return bookings; 
+    } catch (error) {
+      console.error('Error retrieving properties by renterId:', error);
+      throw new Error('Failed to fetch properties');
+    }
+  }
+  
 }

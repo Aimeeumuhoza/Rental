@@ -1,21 +1,32 @@
 import { Request, Response } from "express";
 import { PropertyService } from "../services/property.service";
 import { UserRole } from "../entities/User";
+import cloudinary from "../helper/cloudinaryUpload";
 
 export class PropertyController {
   static async createProperty(req: Request, res: Response): Promise<void> {
     try {
       const user = req.user as any;
-      
+      if (!req.file) {
+        res.status(400).json({ message: "No file uploaded" });
+        return;
+      }
+      const result = await cloudinary.uploader.upload(req.file?.path ?? "")
+     
       if (user.role !== UserRole.HOST) {
         res.status(403).json({ message: "Only hosts can create properties"});
         return;
       }
+      const propertyData = {
+        ...req.body,
+        imageUrl:result.secure_url,
+      };
 
-      const property = await PropertyService.createProperty(req.body, user.id);
+      const property = await PropertyService.createProperty(propertyData, user.id);
       res.status(201).json(property);
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      console.log("error",error)
+      // res.status(400).json({ message: (error as Error).message });
     }
   }
 
@@ -93,5 +104,17 @@ export class PropertyController {
       res.status(400).json({ message: (error as Error).message });
     }
   }
+
+  static async getPropertiesByRent(req: Request, res: Response) : Promise<void> {
+    try {
+      const user = req.user as any;
+      const properties = await PropertyService.getPropertiesByRentId(user.id);
+      res.json(properties);
+    } catch (error) {
+      console.log("e",error)
+      res.status(400).json({ message: (error as Error).message });
+    }
+  }
+  
 }
 

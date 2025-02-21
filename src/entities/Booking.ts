@@ -41,10 +41,10 @@ export class Booking {
   })
   status: BookingStatus | undefined;
 
-  @CreateDateColumn()
+  @Column('date',{ default: () => 'CURRENT_DATE' })
   createdAt: Date | undefined;
 
-  @UpdateDateColumn()
+  @Column('date',{ default: () => 'CURRENT_DATE' })
   updatedAt: Date | undefined;
 
   @ManyToOne(() => Property, property => property.bookings)

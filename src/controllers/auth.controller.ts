@@ -10,7 +10,6 @@ export class AuthController {
       }
 
       const token = AuthService.generateToken(req.user as User);
-      
       // Redirect to client with token
       res.redirect(
         `${process.env.CLIENT_URL}/auth/callback?token=${token}`
