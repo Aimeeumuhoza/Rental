@@ -7,6 +7,40 @@ const bookingRepository = AppDataSource.getRepository(Booking);
 const propertyRepository = AppDataSource.getRepository(Property);
 
 export class BookingService {
+  // static async createBooking(bookingData: {
+  //   propertyId: string;
+  //   renterId: string;
+  //   checkInDate: Date;
+  //   checkOutDate: Date;
+  // }) {
+  //   // Check if property exists and is available
+  //   const property = await propertyRepository.findOne({
+  //     where: { id: bookingData.propertyId, isAvailable: true }
+  //   });
+
+  //   if (!property) {
+  //     throw new Error("Property not found or unavailable");
+  //   }
+
+  //   // Check for double booking
+  //   const existingBooking = await bookingRepository.findOne({
+  //     where: {
+  //       propertyId: bookingData.propertyId,
+  //       status: BookingStatus.CONFIRMED,
+  //       checkInDate: LessThanOrEqual(bookingData.checkOutDate),
+  //       checkOutDate: MoreThanOrEqual(bookingData.checkInDate)
+  //     }
+  //   });
+  //   console.log("existingBooking",existingBooking)
+
+  //   if (existingBooking) {
+  //     throw new Error("Property is already booked for these dates");
+  //   }
+
+  //   const booking = bookingRepository.create(bookingData);
+  //   return await bookingRepository.save(booking);
+  // }
+
   static async createBooking(bookingData: {
     propertyId: string;
     renterId: string;
@@ -15,27 +49,48 @@ export class BookingService {
   }) {
     // Check if property exists and is available
     const property = await propertyRepository.findOne({
-      where: { id: bookingData.propertyId, isAvailable: true }
+      where: { id: bookingData.propertyId, isAvailable: true },
     });
 
     if (!property) {
       throw new Error("Property not found or unavailable");
     }
 
-    // Check for double booking
+    // Check for existing confirmed bookings within the requested date range
     const existingBooking = await bookingRepository.findOne({
       where: {
         propertyId: bookingData.propertyId,
         status: BookingStatus.CONFIRMED,
         checkInDate: LessThanOrEqual(bookingData.checkOutDate),
-        checkOutDate: MoreThanOrEqual(bookingData.checkInDate)
-      }
+        checkOutDate: MoreThanOrEqual(bookingData.checkInDate),
+      },
     });
 
     if (existingBooking) {
-      throw new Error("Property is already booked for these dates");
+      // Find the next available check-in date
+      const nextAvailableBooking = await bookingRepository.findOne({
+        where: {
+          propertyId: bookingData.propertyId,
+          status: BookingStatus.CONFIRMED ,
+          checkInDate: MoreThanOrEqual(existingBooking.checkOutDate as Date), // Find the next check-in date
+        },
+        order: { checkInDate: "ASC" },
+      });
+
+      let suggestedCheckIn = nextAvailableBooking
+        ? new Date(nextAvailableBooking.checkOutDate!)
+        : null;
+
+      throw new Error(
+        `Property is already booked for these dates. ${
+          suggestedCheckIn
+            ? `Next available check-in date is ${suggestedCheckIn.toDateString()}.`
+            : "Please choose different dates."
+        }`
+      );
     }
 
+    // Create the booking
     const booking = bookingRepository.create(bookingData);
     return await bookingRepository.save(booking);
   }
@@ -70,27 +125,6 @@ export class BookingService {
     return await bookingRepository.save(booking);
   }
   
-  // static async updateBookingStatus(
-  //   bookingId: string,
-  //   status: BookingStatus,
-  //   hostId: string
-  // ) {
-  //   const booking = await bookingRepository.findOne({
-  //     where: { id: bookingId },
-  //     relations: ["property"]
-  //   });
-
-  //   if (!booking) {
-  //     throw new Error("Booking not found");
-  //   }
-
-  //   if (booking.property?.host?.id !== hostId) {
-  //     throw new Error("Unauthorized to update this booking");
-  //   }
-
-  //   booking.status = status;
-  //   return await bookingRepository.save(booking);
-  // }
 
   static async getBookingsByRenter(renterId: string) {
     return await bookingRepository.find({
